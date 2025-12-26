@@ -18,6 +18,12 @@ static WIN_WIDTH: usize = 800;
 static WIN_HEIGHT: usize = 600;
 static FOV: usize = 60;
 
+struct Screen<'a> {
+    buffer: &'a mut [u8],
+    bytes_per_pixel: usize,
+    bytes_per_line: usize,
+}
+
 #[derive(Debug, Copy, Clone)]
 struct Point {
     x: f64,
@@ -155,13 +161,13 @@ impl ops::Mul<Matrix> for Matrix {
     }
 }
 
-pub fn putpixel(buffer: &mut [u8], x: usize, y: usize, bytes_per_line: usize) {
-    let offset = y * bytes_per_line + (x*3);
+pub fn putpixel(screen: &mut Screen, x: usize, y: usize) {
+    let offset = y * screen.bytes_per_line + (x*screen.bytes_per_pixel);
     // JJW: TODO: HACK
     if offset < 1440000-3 {
-        buffer[offset] = 0xff;
-        buffer[offset+1] = 0xff;
-        buffer[offset+2] = 0xff;
+        screen.buffer[offset] = 0xff;
+        screen.buffer[offset+1] = 0xff;
+        screen.buffer[offset+2] = 0xff;
     }
 }
 
@@ -216,6 +222,12 @@ fn main() {
             // clear the buffer to black...
             buffer.fill(0);
 
+            let mut screen = Screen {
+                buffer: buffer,
+                bytes_per_pixel: 3,
+                bytes_per_line: pitch,
+            };
+
             for mut point in cube.get_vertices() {
 
                 let matrix = Matrix::rotate_y(angle as f64, &trig);
@@ -225,7 +237,7 @@ fn main() {
                 let screen_x = (dx * rotated_point.x) / rotated_point.z + (WIN_WIDTH/2) as f64;
                 let screen_y = (dy * rotated_point.y) / rotated_point.z + (WIN_HEIGHT/2) as f64;
 
-                putpixel(buffer, screen_x as usize, screen_y as usize, pitch);
+                putpixel(&mut screen, screen_x as usize, screen_y as usize);
             }
         }).unwrap();
 
