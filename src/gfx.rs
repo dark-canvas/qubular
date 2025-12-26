@@ -1,3 +1,9 @@
+/*
+ * Some simple graphics routines
+ *
+ * TODO: move to a separate/sharable repo
+ */
+
 pub struct Screen<'a> {
     pub buffer: &'a mut [u8],
     pub width: usize,
