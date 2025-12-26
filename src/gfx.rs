@@ -49,12 +49,16 @@ impl<'a> Screen<'a> {
                 let double_delta_y = delta_y + delta_y;
                 let diff_double_deltas = double_delta_y - (delta_x + delta_x);
                 let mut error = double_delta_y - delta_x;
-                self.putpixel(x1 as usize, y1 as usize); // plot our first pixel
-                //while(delta_x -= 1) { // loop for the length of the major axis
+
+                // plot our first pixel
+                self.putpixel(x1 as usize, y1 as usize);
+                delta_x -= 1;
+
+                // loop for the length of the major axis 
                 while delta_x > 0 {
                     if(error >= 0) { // if the error is greater than or equal to zero:
-                    y1 += 1; // increase the minor axis (y)
-                    error += diff_double_deltas;
+                        y1 += 1; // increase the minor axis (y)
+                        error += diff_double_deltas;
                     } else {
                         error += double_delta_y;
                     }
@@ -67,12 +71,16 @@ impl<'a> Screen<'a> {
                 let double_delta_x = delta_x + delta_x;
                 let diff_double_deltas = double_delta_x - (delta_y + delta_y);
                 let mut error = double_delta_x - delta_y;
-                self.putpixel( x1 as usize, y1 as usize); // plot our first pixel
-                //while(delta_y -= 1) { // loop for the length of the major axis
+                
+                // plot our first pixel
+                self.putpixel( x1 as usize, y1 as usize); 
+                delta_y -= 1;
+                
+                // loop for the length of the major axis
                 while delta_y > 0 {
                     if(error >= 0) { // if the error is greater than or equal to zero:
-                    x1 += direction; // increase the minor axis (x)
-                    error += diff_double_deltas;
+                        x1 += direction; // increase the minor axis (x)
+                        error += diff_double_deltas;
                     } else  {
                         error += double_delta_x;
                     }
