@@ -1,0 +1,9 @@
+[package]
+name = "qubular"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+fmt = "0.1.0"
+sdl2 = "0.38.0"
+trigr = { git = "https://github.com/dark-canvas/trigr.git", version = "0.1.0" }
