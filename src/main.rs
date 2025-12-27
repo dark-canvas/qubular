@@ -2,11 +2,19 @@ extern crate sdl2;
 extern crate trigr;
 
 mod gfx;
+mod matrix;
+mod point2d;
+mod point3d;
 mod simple_object;
+mod vector;
 
 use gfx::Screen;
+use matrix::Matrix;
+use point2d::Point2D;
+use point3d::Point3D;
 use simple_object::SimpleObject;
 use trigr::SineCosineTable;
+use vector::Vector;
 
 use std::ops;
 use std::fmt;
@@ -20,191 +28,6 @@ use std::time::SystemTime;
 static WIN_WIDTH: usize = 800;
 static WIN_HEIGHT: usize = 600;
 static FOV: usize = 60;
-
-#[derive(Debug, Copy, Clone)]
-struct Point2D {
-    x: u32,
-    y: u32,
-}
-
-#[derive(Debug, Copy, Clone)]
-struct Point3D {
-    x: f64,
-    y: f64,
-    z: f64,
-    w: f64,
-}
-
-impl fmt::Display for Point2D {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[ {} {} ]", self.x, self.y)
-    }
-}
-
-impl fmt::Display for Point3D {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[ {} {} {} {} ]", self.x, self.y, self.z, self.w)
-    }
-}
-
-impl ops::Mul<Matrix> for Point3D {
-    type Output = Point3D;
-
-    // TODO: this can be optimized in the context of 3d math
-    fn mul(self, mat: Matrix) -> Self {
-        Point3D {
-            x: self.x * mat.data[0][0] + self.y * mat.data[1][0] + self.z * mat.data[2][0] + self.w * mat.data[3][0],
-            y: self.x * mat.data[0][1] + self.y * mat.data[1][1] + self.z * mat.data[2][1] + self.w * mat.data[3][1],
-            z: self.x * mat.data[0][2] + self.y * mat.data[1][2] + self.z * mat.data[2][2] + self.w * mat.data[3][2],
-            w: self.x * mat.data[0][3] + self.y * mat.data[1][3] + self.z * mat.data[2][3] + self.w * mat.data[3][3],
-        }
-    }
-}
-
-impl ops::Mul<&Matrix> for Point3D {
-    type Output = Point3D;
-
-    // TODO: this can be optimized in the context of 3d math
-    fn mul(self, mat: &Matrix) -> Self {
-        Point3D {
-            x: self.x * mat.data[0][0] + self.y * mat.data[1][0] + self.z * mat.data[2][0] + self.w * mat.data[3][0],
-            y: self.x * mat.data[0][1] + self.y * mat.data[1][1] + self.z * mat.data[2][1] + self.w * mat.data[3][1],
-            z: self.x * mat.data[0][2] + self.y * mat.data[1][2] + self.z * mat.data[2][2] + self.w * mat.data[3][2],
-            w: self.x * mat.data[0][3] + self.y * mat.data[1][3] + self.z * mat.data[2][3] + self.w * mat.data[3][3],
-        }
-    }
-}
-
-impl Point3D {
-    fn new(x: f64, y: f64, z: f64) -> Self {
-        Point3D{
-            x:x, 
-            y:y,
-            z:z,
-            w:1.0,
-        }
-    }
-}
-
-struct Matrix {
-    data:  [[f64; 4]; 4],
-}
-
-impl fmt::Display for Matrix {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for i in 0..4 {
-            write!(f, "[ {} {} {} {} ]\n", self.data[i][0], self.data[i][1], self.data[i][2], self.data[i][3] )?;
-        }
-        Ok(())
-    }
-}
-
-
-impl Matrix {
-    fn identity() -> Matrix {
-        Matrix {
-            data: [ [ 1.0, 0.0, 0.0, 0.0, ],
-                    [ 0.0, 1.0, 0.0, 0.0, ],
-                    [ 0.0, 0.0, 1.0, 0.0, ],
-                    [ 0.0, 0.0, 0.0, 1.0, ] ]
-        }
-    }
-
-    fn translate(x: f64, y: f64, z: f64) -> Matrix {
-        Matrix {
-            data: [ [ 1.0, 0.0, 0.0, 0.0, ],
-                    [ 0.0, 1.0, 0.0, 0.0, ],
-                    [ 0.0, 0.0, 1.0, 0.0, ],
-                    [   x,   y,   z, 1.0, ] ]
-        }
-    }
-
-    fn scale(x: f64, y: f64, z: f64) -> Matrix {
-        Matrix {
-            data: [ [   x, 0.0, 0.0, 0.0, ],
-                    [ 0.0,   y, 0.0, 0.0, ],
-                    [ 0.0, 0.0,   z, 0.0, ],
-                    [ 0.0, 0.0, 0.0, 1.0, ] ]
-        }
-    }
-
-    fn rotate_x(angle: f64, lookup: &SineCosineTable) -> Matrix {
-        let sin_a = lookup.sine(angle);
-        let cos_a = lookup.cosine(angle);
-        Matrix {
-            data: [ [  1.0,    0.0,    0.0,    0.0, ],
-                    [  0.0,  cos_a,  sin_a,    0.0, ],
-                    [  0.0, -sin_a,  cos_a,    0.0, ],
-                    [  0.0,    0.0,    0.0,    1.0, ] ]
-        }
-    }
-
-    fn rotate_y(angle: f64, lookup: &SineCosineTable) -> Matrix {
-        let sin_a = lookup.sine(angle);
-        let cos_a = lookup.cosine(angle);
-        Matrix {
-            data: [ [ cos_a,    0.0, -sin_a,    0.0, ],
-                    [   0.0,    1.0,    0.0,    0.0, ],
-                    [ sin_a,    0.0,  cos_a,    0.0, ],
-                    [   0.0,    0.0,    0.0,    1.0, ] ]
-        }
-    }
-
-    fn rotate_z(angle: f64, lookup: &SineCosineTable) -> Matrix {
-        let sin_a = lookup.sine(angle);
-        let cos_a = lookup.cosine(angle);
-        Matrix {
-            data: [ [  cos_a,  sin_a,    0.0,    0.0, ],
-                    [ -sin_a,  cos_a,    0.0,    0.0, ],
-                    [    0.0,    0.0,    1.0,    0.0, ],
-                    [    0.0,    0.0,    0.0,    1.0, ] ]
-        }
-    }
-
-    // TODO: 
-    // write an inverse function?
-    // https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
-}
-
-/*
-impl ops::Mul<&Matrix> for &Matrix {
-    type Output = Matrix;
-
-    // TODO: this can be optimized in the context of 3d math
-    fn mul(self, rhs: &Self) -> Self {
-        let mut result = Matrix::identity();
-        for r in 0..4 {
-            for c in 0..4 {
-                result.data[r][c] = 0.0;
-                for i in 0..4 {
-                    result.data[r][c] += self.data[r][i] * rhs.data[i][c];
-                }
-            }
-        }
-        result
-    }
-}
-    */
-
-impl ops::Mul<Matrix> for Matrix {
-    type Output = Matrix;
-
-    // TODO: this can be optimized in the context of 3d math
-    // NOTE: this consumes self and rhs which isn't ideal (although 
-    // it looks better in code, eg: let c = a * b; vs let c = &a * &b;)
-    fn mul(self, rhs: Self) -> Self {
-        let mut result = Matrix::identity();
-        for r in 0..4 {
-            for c in 0..4 {
-                result.data[r][c] = 0.0;
-                for i in 0..4 {
-                    result.data[r][c] += self.data[r][i] * rhs.data[i][c];
-                }
-            }
-        }
-        result
-    }
-}
 
 fn main() {
     let mut cube = SimpleObject::cube(5);
