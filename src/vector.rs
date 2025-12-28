@@ -2,13 +2,13 @@ use crate::point3d::Point3D;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Vector {
-    x: f64,
-    y: f64,
-    z: f64,
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
 }
 
 impl Vector {
-    fn new(x: f64, y: f64, z: f64) -> Self {
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
         Vector{
             x:x, 
             y:y,
@@ -16,7 +16,7 @@ impl Vector {
         }
     }
 
-    fn from_points(p1: &Point3D, p2: &Point3D) -> Self {
+    pub fn from_points(p1: &Point3D, p2: &Point3D) -> Self {
         Vector{
             x: p2.x - p1.x,
             y: p2.y - p1.y,
@@ -24,7 +24,7 @@ impl Vector {
         }
     }
 
-    fn normalize(&self) -> Vector {
+    pub fn normalize(&self) -> Vector {
         let length = (self.x*self.x + self.y*self.y + self.z*self.z).sqrt();
         Vector {
             x: self.x / length,
@@ -33,7 +33,7 @@ impl Vector {
         }
     }
 
-    fn cross_product(&self, other: &Vector) -> Vector {
+    pub fn cross_product(&self, other: &Vector) -> Vector {
         Vector {
             x: self.y * other.z - self.z * other.y,
             y: self.z * other.x - self.x * other.z,
@@ -41,7 +41,7 @@ impl Vector {
         }
     }
 
-    fn dot_product(&self, other: &Vector) -> f64 {
+    pub fn dot_product(&self, other: &Vector) -> f64 {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 }

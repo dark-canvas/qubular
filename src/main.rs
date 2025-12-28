@@ -18,6 +18,8 @@ use vector::Vector;
 
 use std::ops;
 use std::fmt;
+use std::thread;
+use std::time::Duration;
 
 use sdl2::event::Event;
 use sdl2::keyboard::{Keycode, Scancode};
@@ -89,14 +91,44 @@ fn main() {
             };
 
             let rotate_y = Matrix::rotate_y(angle as f64, &trig);
-            //let rotate_z = Matrix::rotate_z(angle as f64, &trig);
-            let translate = Matrix::translate(0.0, 0.0, 10.0);
-            let matrix = rotate_y * translate;
+            let rotate_x = Matrix::rotate_x(angle as f64 / 2.0, &trig);
+            let translate = Matrix::translate(0.0, 0.0, 15.0);
+            let matrix = rotate_y * rotate_x * translate;
             cube.apply(&matrix);
-            
+
+            // in this simple setup, the camera is hardcoded to look down the Z axis
+            let view_normal = Vector::new(0.0, 0.0, -1.0);
+
             cube.project(WIN_WIDTH, WIN_HEIGHT, FOV);
+            
             let points = cube.get_projected();
-            for polygon in cube.get_polygons() {
+            for p in 0..cube.get_polygon_count() {
+                let polygon = cube.get_polygon(p);
+                
+                // is this polygon visisble?
+                // If the dot product is >= 0, then polygon is >= 90 degrees to view normal and thus not visible
+                let normal = &cube.get_normals()[p];
+                if normal.dot_product(&view_normal) >= 0.0 {
+                    continue;
+                }
+
+                // TODO: project and draw the normal
+                /*
+                let projected_normal = &cube.get_projected_normals()[p];
+                if normal.z != 0.0 {
+                    //let center_x = (points[polygon[0]].x + points[polygon[2]].x) / 2;
+                    //let center_y = (points[polygon[0]].y + points[polygon[2]].y) / 2;
+                    let start_x = points[polygon[1]].x;
+                    let start_y = points[polygon[1]].y;
+                    println!("normal: {:?} projected: {:?} start: {},{}", normal, projected_normal, start_x, start_y);
+                    screen.line(
+                        start_x as usize, 
+                        start_y as usize,
+                        (start_x + projected_normal.x) as usize, 
+                        (start_y + projected_normal.y) as usize);
+                }
+                */
+
                 let mut last_point = 0usize;
                 for point in 1..polygon.len() {
                     screen.line(
@@ -133,6 +165,8 @@ fn main() {
         canvas.copy(&texture, None, None).unwrap();
         canvas.present();
 
+        thread::sleep(Duration::from_millis(100));
+
         frames += 1;
         angle += 1;
         if angle >= 360 {
@@ -143,8 +177,10 @@ fn main() {
 
 
     // TODO: 
-    //   move the point and matrix code into separate files
+    //   add frame rate calculation and display
+    //   display surface (and vertice) normals
+    //   rotate normals with points? (rather than recalculating each frame)
     //   add camera-based view system
     //   add shading/texture mapping
-    //   back-face culling
+    //   add z-buffer
 }
