@@ -1,13 +1,16 @@
 extern crate sdl2;
 extern crate trigr;
 
+mod colour;
 mod gfx;
 mod matrix;
 mod point2d;
 mod point3d;
 mod simple_object;
 mod vector;
+mod zbuffer;
 
+use colour::Colour;
 use gfx::Screen;
 use matrix::Matrix;
 use point2d::Point2D;
@@ -15,6 +18,7 @@ use point3d::Point3D;
 use simple_object::SimpleObject;
 use trigr::SineCosineTable;
 use vector::Vector;
+use zbuffer::ZBuffer;
 
 use std::ops;
 use std::fmt;
@@ -62,7 +66,8 @@ fn main() {
     let dx = (WIN_WIDTH/2) as f64 / tan_half_fov;
     let dy = (WIN_HEIGHT/2) as f64 / tan_half_fov;
 
-    let mut angle = 0;
+    let mut y_angle = 0.0;
+    let mut x_angle = 0.0;
 
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -79,19 +84,18 @@ fn main() {
         }
         
         texture.with_lock(None, |buffer: &mut [u8], pitch: usize| {
-            // clear the buffer to black...
-            buffer.fill(0);
+            let mut screen = Screen::new(
+                buffer,
+                WIN_WIDTH,
+                WIN_HEIGHT,
+                3,
+                pitch,
+            );
 
-            let mut screen = Screen {
-                buffer: buffer,
-                width: WIN_WIDTH,
-                height: WIN_HEIGHT,
-                bytes_per_pixel: 3,
-                bytes_per_line: pitch,
-            };
+            screen.clear();
 
-            let rotate_y = Matrix::rotate_y(angle as f64, &trig);
-            let rotate_x = Matrix::rotate_x(angle as f64 / 2.0, &trig);
+            let rotate_y = Matrix::rotate_y(y_angle, &trig);
+            let rotate_x = Matrix::rotate_x(x_angle, &trig);
             let translate = Matrix::translate(0.0, 0.0, 15.0);
             let matrix = rotate_y * rotate_x * translate;
             cube.apply(&matrix);
@@ -112,65 +116,31 @@ fn main() {
                     continue;
                 }
 
-                // TODO: project and draw the normal
-                /*
-                let projected_normal = &cube.get_projected_normals()[p];
-                if normal.z != 0.0 {
-                    //let center_x = (points[polygon[0]].x + points[polygon[2]].x) / 2;
-                    //let center_y = (points[polygon[0]].y + points[polygon[2]].y) / 2;
-                    let start_x = points[polygon[1]].x;
-                    let start_y = points[polygon[1]].y;
-                    println!("normal: {:?} projected: {:?} start: {},{}", normal, projected_normal, start_x, start_y);
-                    screen.line(
-                        start_x as usize, 
-                        start_y as usize,
-                        (start_x + projected_normal.x) as usize, 
-                        (start_y + projected_normal.y) as usize);
-                }
-                */
+                // pull together the relevant parts to draw the polygon
+                // NOTE: this copies the points - could be optimized? (4xf64 = 32 bytes per vertex)
+                let polygon_points: Vec< (Point3D, Colour) > = polygon.iter()
+                    .map(|&pi| (points[pi], Colour::new(255, 255, 255)) )
+                    .collect();
 
-                let mut last_point = 0usize;
-                for point in 1..polygon.len() {
-                    screen.line(
-                        points[polygon[last_point]].x as usize, 
-                        points[polygon[last_point]].y as usize,
-                        points[polygon[point]].x as usize, 
-                        points[polygon[point]].y as usize);
-                    last_point = point;
-                }
-                // close the polygon by drawing a line from last to first
-                screen.line(
-                    points[polygon[last_point]].x as usize, 
-                    points[polygon[last_point]].y as usize,
-                    points[polygon[0usize]].x as usize, 
-                    points[polygon[0usize]].y as usize);
+                screen.polygon(&polygon_points);
             }
-            /*
-            for point in cube.get_projected() {
-                screen.putpixel(point.x as usize, point.y as usize);
-            }
-            */
-
-            /*
-            for mut point in cube.get_transformed() {
-
-                let screen_x = (dx * point.x) / point.z + (WIN_WIDTH/2) as f64;
-                let screen_y = (dy * point.y) / point.z + (WIN_HEIGHT/2) as f64;
-
-                screen.putpixel(screen_x as usize, screen_y as usize);
-            }*/
         }).unwrap();
 
         // Copy the whole texture to the canvas...
         canvas.copy(&texture, None, None).unwrap();
         canvas.present();
 
-        thread::sleep(Duration::from_millis(100));
+        thread::sleep(Duration::from_millis(10));
 
         frames += 1;
-        angle += 1;
-        if angle >= 360 {
-            angle = 0;
+        y_angle += 1.0;
+        if y_angle >= 360.0 {
+            y_angle = 0.0;
+        }
+
+        x_angle += 0.5;
+        if x_angle >= 360.0 {
+            x_angle = 0.0;
         }
         
     }

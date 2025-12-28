@@ -3,6 +3,8 @@ use crate::matrix::Matrix;
 use std::ops;
 use std::fmt;
 
+// TODO: change to f32 to save space and improve performance?
+// TODO: do we need w here?
 #[derive(Debug, Copy, Clone)]
 pub struct Point3D {
     pub x: f64,

@@ -1,18 +1,59 @@
+use crate::zbuffer::ZBuffer;
+use crate::colour::Colour;
+use crate::point3d::Point3D;
+
+
+#[derive(Debug, Copy, Clone)]
+struct SpanNode {
+    x: usize,
+    r: u8,
+    g: u8,
+    b: u8,
+    z: f64,
+}
+
+#[derive(Debug, Copy, Clone)]
+struct Span {
+    start: SpanNode,
+    end: SpanNode,
+}
+
 /*
  * Some simple graphics routines
  *
  * TODO: move to a separate/sharable repo
  */
-
 pub struct Screen<'a> {
     pub buffer: &'a mut [u8],
     pub width: usize,
     pub height: usize,
     pub bytes_per_pixel: usize,
     pub bytes_per_line: usize,
+    zbuf: ZBuffer,
+    spans: Vec<Option<Span>>,
 }
 
 impl<'a> Screen<'a> {
+    pub fn new(buffer: &'a mut [u8], width: usize, height: usize, bytes_per_pixel: usize, bytes_per_line: usize) -> Screen<'a> {
+        Screen {
+            buffer: buffer,
+            width: width,
+            height: height,
+            bytes_per_pixel: bytes_per_pixel,
+            bytes_per_line: bytes_per_line,
+            zbuf: ZBuffer::new(width, height),
+            spans: vec![None; height],
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.buffer.fill(0);
+        self.zbuf.clear();
+        for span in self.spans.iter_mut() {
+            *span = None;
+        }
+    }
+
     // TODO: these functions need to accept a colour
     pub fn putpixel(&mut self, x: usize, y: usize) {
         let offset = y * self.bytes_per_line + (x*self.bytes_per_pixel);
@@ -96,5 +137,25 @@ impl<'a> Screen<'a> {
                 }
             }
         }
+    }
+
+    // vertices are expected to be projected (in screen space) but with z/depth preserved.
+    // TODO: use colour
+    pub fn polygon(&mut self, vertices: &Vec<(Point3D, Colour)>) {
+        let mut prev_point = &vertices[0];
+        for point in 1..vertices.len() {
+            self.line(
+                prev_point.0.x as usize, 
+                prev_point.0.y as usize,
+                vertices[point].0.x as usize,
+                vertices[point].0.y as usize);
+            prev_point = &vertices[point];
+        }
+        // close the polygon by drawing a line from last to first
+        self.line(
+            prev_point.0.x as usize, 
+            prev_point.0.y as usize,
+            vertices[0].0.x as usize, 
+            vertices[0].0.y as usize);
     }
 }

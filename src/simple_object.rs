@@ -26,7 +26,7 @@ pub struct SimpleObject {
     // TODO: will need some way to expose this in order to allow it to be transformed
     vertices: Vec<Point3D>,
     transformed: Vec<Point3D>,
-    projected: Vec<Point2D>,
+    projected: Vec<Point3D>,
     polygons: Vec<Polygon>,
     normals: Vec<Vector>,
     projected_normals: Vec<Point2D>,
@@ -50,7 +50,7 @@ impl SimpleObject {
 
 
         let d : f64 = size as f64 / 2.0;
-        let mut result = SimpleObject{
+        let mut result = SimpleObject {
             vertices: vec![
                 // front most (+z) sqaure, from top-left point and going clock-wise, followed by the same square in behind (-z)
                 Point3D::new(-d,  d,  d), Point3D::new(d,  d,  d), Point3D::new(d, -d,  d), Point3D::new(-d, -d,  d), 
@@ -60,7 +60,7 @@ impl SimpleObject {
                 Point3D{ x:0.0, y:0.0, z:0.0, w:0.0 }; 8
             ],
             projected: vec![
-                Point2D{ x:0, y:0 }; 8
+                Point3D{ x:0.0, y:0.0, z:0.0, w:0.0 }; 8
             ],
             // define polygons in counter-clockwise order in order for the normals to point outward
             polygons: vec![
@@ -112,7 +112,7 @@ impl SimpleObject {
         &self.transformed
     }
 
-    pub fn get_projected(&self) -> &Vec<Point2D> {
+    pub fn get_projected(&self) -> &Vec<Point3D> {
         &self.projected
     }
 
@@ -149,9 +149,11 @@ impl SimpleObject {
 
         for i in 0..self.transformed.len() {
             let point = &self.transformed[i];
-            let mut projected = Point2D{
-                x: ((point.x * aspect_ratio * fov_rad) / point.z * (win_width as f64 / 2.0) + (win_width as f64 / 2.0)) as u32,
-                y: ((point.y * fov_rad) / point.z * (win_height as f64 / 2.0) + (win_height as f64 / 2.0)) as u32,
+            let mut projected = Point3D{
+                x: ((point.x * aspect_ratio * fov_rad) / point.z * (win_width as f64 / 2.0) + (win_width as f64 / 2.0)),
+                y: ((point.y * fov_rad) / point.z * (win_height as f64 / 2.0) + (win_height as f64 / 2.0)),
+                z: point.z,
+                w: point.w,
             };
             self.projected[i] = projected;
         }
