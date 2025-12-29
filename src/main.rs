@@ -69,6 +69,7 @@ fn main() {
     let mut y_angle = 0.0;
     let mut x_angle = 0.0;
 
+    let mut paused = false;
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
@@ -77,10 +78,21 @@ fn main() {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
+                Event::KeyDown {
+                    keycode: Some(Keycode::Space),
+                    ..
+                } => {
+                    paused = !paused;
+                }
                 e => {
                     println!("{:?}", e);
                 }
             }
+        }
+        
+        thread::sleep(Duration::from_millis(10));
+        if paused {
+            continue;
         }
         
         texture.with_lock(None, |buffer: &mut [u8], pitch: usize| {
@@ -119,7 +131,7 @@ fn main() {
                 // pull together the relevant parts to draw the polygon
                 // NOTE: this copies the points - could be optimized? (4xf64 = 32 bytes per vertex)
                 let polygon_points: Vec< (Point3D, Colour) > = polygon.iter()
-                    .map(|&pi| (points[pi], Colour::new(255, 255, 255)) )
+                    .map(|&pi| (points[pi], cube.get_colours()[p]) )
                     .collect();
 
                 screen.polygon(&polygon_points);
@@ -129,8 +141,6 @@ fn main() {
         // Copy the whole texture to the canvas...
         canvas.copy(&texture, None, None).unwrap();
         canvas.present();
-
-        thread::sleep(Duration::from_millis(10));
 
         frames += 1;
         y_angle += 1.0;

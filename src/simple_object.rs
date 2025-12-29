@@ -1,5 +1,5 @@
 
-use crate::{Point2D, Point3D, Matrix, Vector};
+use crate::{Point2D, Point3D, Matrix, Vector, Colour};
 
 // TODO: descibe on the proper coordinate system?
 // OpenGL supposedly uses a right handed system:
@@ -29,6 +29,7 @@ pub struct SimpleObject {
     projected: Vec<Point3D>,
     polygons: Vec<Polygon>,
     normals: Vec<Vector>,
+    colours: Vec<Colour>,
     projected_normals: Vec<Point2D>,
 }
 
@@ -63,6 +64,7 @@ impl SimpleObject {
                 Point3D{ x:0.0, y:0.0, z:0.0, w:0.0 }; 8
             ],
             // define polygons in counter-clockwise order in order for the normals to point outward
+            // TODO: merge all polygon data into a single structure
             polygons: vec![
                 vec![ 3, 2, 1, 0 ], // front
                 vec![ 0, 4, 7, 3 ], // left
@@ -73,6 +75,14 @@ impl SimpleObject {
             ],
             normals: vec![
                 Vector::new(0.0, 0.0, 0.0); 6
+            ],
+            colours: vec![
+                Colour::new(255, 0, 0),   // red
+                Colour::new(0, 255, 0),   // green
+                Colour::new(0, 0, 255),   // blue
+                Colour::new(255, 255, 0), // yellow
+                Colour::new(0, 255, 255), // cyan
+                Colour::new(255, 0, 255), // magenta
             ],
             projected_normals: vec![
                 Point2D{ x:0, y:0 }; 6
@@ -130,6 +140,10 @@ impl SimpleObject {
 
     pub fn get_projected_normals(&self) -> &Vec<Point2D> {
         &self.projected_normals
+    }
+
+    pub fn get_colours(&self) -> &Vec<Colour> {
+        &self.colours
     }
 
     pub fn apply(&mut self, mat: &Matrix) {

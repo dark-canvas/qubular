@@ -1,7 +1,7 @@
 pub struct ZBuffer {
     width: usize,
     height: usize,
-    buffer: Vec<f32>,
+    buffer: Vec<f64>,
 }
 
 impl ZBuffer {
@@ -9,21 +9,21 @@ impl ZBuffer {
         ZBuffer {
             width,
             height,
-            buffer: vec![f32::INFINITY; width * height],
+            buffer: vec![f64::INFINITY; width * height],
         }
     }
 
     pub fn clear(&mut self) {
         for i in 0..self.buffer.len() {
-            self.buffer[i] = f32::INFINITY;
+            self.buffer[i] = f64::INFINITY;
         }
     }
 
-    pub fn get_depth(&self, x: usize, y: usize) -> f32 {
+    pub fn get_depth(&self, x: usize, y: usize) -> f64 {
         self.buffer[y * self.width + x]
     }
 
-    pub fn set_depth(&mut self, x: usize, y: usize, depth: f32) -> bool {
+    pub fn set_depth(&mut self, x: usize, y: usize, depth: f64) -> bool {
         if depth >= self.buffer[y * self.width + x] {
             return false;
         }
