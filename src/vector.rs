@@ -1,10 +1,17 @@
 use crate::point3d::Point3D;
+use std::fmt;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Vector {
     pub x: f64,
     pub y: f64,
     pub z: f64,
+}
+
+impl fmt::Display for Vector {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[ {} {} {} ]", self.x, self.y, self.z)
+    }
 }
 
 impl Vector {
@@ -16,6 +23,7 @@ impl Vector {
         }
     }
 
+    // TODO: should this be p1 - p2?  What is the convention?
     pub fn from_points(p1: &Point3D, p2: &Point3D) -> Self {
         Vector{
             x: p2.x - p1.x,

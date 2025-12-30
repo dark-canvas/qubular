@@ -1,6 +1,7 @@
 extern crate sdl2;
 extern crate trigr;
 
+mod camera;
 mod colour;
 mod gfx;
 mod matrix;
@@ -38,6 +39,19 @@ static FOV: usize = 60;
 fn main() {
     let mut cube = SimpleObject::cube(5);
     let mut cube2 = SimpleObject::cube(5);
+
+    // TODO: the rendering of the polygons is messed up when the camera is in use, even when the camera 
+    // is at 0,0,0 (which should be equivalent to no camera transform at all)
+    // I think it's because Sz is -1... if I negate the forward vector in the camera matrix it seems to work properly, 
+    // but I'm not sure if that's correct.
+    let camera = camera::Camera::new(
+        Point3D::new(0.0, 0.0, 0.0),
+        Point3D::new(0.0, 0.0, 15.0),
+    );
+
+    println!("Camera matrix:\n{}", camera.get_matrix());
+    println!("View normal:\n{}", camera.get_view_normal());
+
     let trig = SineCosineTable::new(360*4);
 
     let sdl_context = sdl2::init().unwrap();
@@ -112,18 +126,17 @@ fn main() {
             let rotate_x = Matrix::rotate_x(x_angle, &trig);
             // back-face culling isn't working properly with the x translation... using the wrong coords?
             let translate = Matrix::translate(2.0, 0.0, 16.0);
-            let matrix = rotate_y * rotate_x * translate;
+            let matrix = rotate_y * rotate_x * translate * camera.get_matrix();
             cube.apply(&matrix);
 
             // rotate y was consumed above... recreated (TODO: borrow above)
             let rotate_y = Matrix::rotate_y(y_angle, &trig);
             let rotate_z = Matrix::rotate_z(z_angle, &trig);
             let translate2 = Matrix::translate(-2.0, 0.0, 16.0);
-            let matrix2 = rotate_y * rotate_z * translate2;
+            let matrix2 = rotate_y * rotate_z * translate2 * camera.get_matrix();
             cube2.apply(&matrix2);
 
-            // in this simple setup, the camera is hardcoded to look down the Z axis
-            let view_normal = Vector::new(0.0, 0.0, -1.0);
+            let view_normal = camera.get_view_normal();
 
             cube.project(WIN_WIDTH, WIN_HEIGHT, FOV);
             cube2.project(WIN_WIDTH, WIN_HEIGHT, FOV);

@@ -85,12 +85,11 @@ impl Matrix {
     // https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
 }
 
-/*
-impl ops::Mul<&Matrix> for &Matrix {
+impl ops::Mul<&Matrix> for Matrix {
     type Output = Matrix;
 
     // TODO: this can be optimized in the context of 3d math
-    fn mul(self, rhs: &Self) -> Self {
+    fn mul(self, rhs: &Matrix) -> Matrix {
         let mut result = Matrix::identity();
         for r in 0..4 {
             for c in 0..4 {
@@ -103,7 +102,6 @@ impl ops::Mul<&Matrix> for &Matrix {
         result
     }
 }
-    */
 
 impl ops::Mul<Matrix> for Matrix {
     type Output = Matrix;
