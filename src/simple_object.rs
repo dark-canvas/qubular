@@ -1,5 +1,6 @@
 
 use crate::{Point2D, Point3D, Matrix, Vector, Colour};
+use crate::gfx::Screen;
 
 // TODO: descibe on the proper coordinate system?
 // OpenGL supposedly uses a right handed system:
@@ -181,4 +182,27 @@ impl SimpleObject {
             self.projected_normals[i] = projected_normal;
         }
     }
+
+    pub fn render(&self, screen: &mut crate::gfx::Screen, view_normal: &Vector) {
+        let points = self.get_projected();
+        for p in 0..self.get_polygon_count() {
+            let polygon = self.get_polygon(p);
+            
+            // is this polygon visisble?
+            // If the dot product is >= 0, then polygon is >= 90 degrees to view normal and thus not visible
+            let normal = &self.get_normals()[p];
+            if normal.dot_product(&view_normal) >= 0.0 {
+                continue;
+            }
+
+            // pull together the relevant parts to draw the polygon
+            // NOTE: this copies the points - could be optimized? (4xf64 = 32 bytes per vertex)
+            let polygon_points: Vec< (Point3D, Colour) > = polygon.iter()
+                .map(|&pi| (points[pi], self.get_colours()[p]) )
+                .collect();
+
+            screen.polygon(&polygon_points);
+        }
+    }
+
 }

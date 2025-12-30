@@ -24,6 +24,9 @@ impl ZBuffer {
     }
 
     pub fn set_depth(&mut self, x: usize, y: usize, depth: f64) -> bool {
+        if x >= self.width || y >= self.height {
+            return false;
+        }
         if depth >= self.buffer[y * self.width + x] {
             return false;
         }

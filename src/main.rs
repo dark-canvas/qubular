@@ -37,6 +37,7 @@ static FOV: usize = 60;
 
 fn main() {
     let mut cube = SimpleObject::cube(5);
+    let mut cube2 = SimpleObject::cube(5);
     let trig = SineCosineTable::new(360*4);
 
     let sdl_context = sdl2::init().unwrap();
@@ -68,6 +69,7 @@ fn main() {
 
     let mut y_angle = 0.0;
     let mut x_angle = 0.0;
+    let mut z_angle = 0.0;
 
     let mut paused = false;
     'running: loop {
@@ -108,34 +110,26 @@ fn main() {
 
             let rotate_y = Matrix::rotate_y(y_angle, &trig);
             let rotate_x = Matrix::rotate_x(x_angle, &trig);
-            let translate = Matrix::translate(0.0, 0.0, 15.0);
+            // back-face culling isn't working properly with the x translation... using the wrong coords?
+            let translate = Matrix::translate(2.0, 0.0, 16.0);
             let matrix = rotate_y * rotate_x * translate;
             cube.apply(&matrix);
+
+            // rotate y was consumed above... recreated (TODO: borrow above)
+            let rotate_y = Matrix::rotate_y(y_angle, &trig);
+            let rotate_z = Matrix::rotate_z(z_angle, &trig);
+            let translate2 = Matrix::translate(-2.0, 0.0, 16.0);
+            let matrix2 = rotate_y * rotate_z * translate2;
+            cube2.apply(&matrix2);
 
             // in this simple setup, the camera is hardcoded to look down the Z axis
             let view_normal = Vector::new(0.0, 0.0, -1.0);
 
             cube.project(WIN_WIDTH, WIN_HEIGHT, FOV);
-            
-            let points = cube.get_projected();
-            for p in 0..cube.get_polygon_count() {
-                let polygon = cube.get_polygon(p);
-                
-                // is this polygon visisble?
-                // If the dot product is >= 0, then polygon is >= 90 degrees to view normal and thus not visible
-                let normal = &cube.get_normals()[p];
-                if normal.dot_product(&view_normal) >= 0.0 {
-                    continue;
-                }
+            cube2.project(WIN_WIDTH, WIN_HEIGHT, FOV);
 
-                // pull together the relevant parts to draw the polygon
-                // NOTE: this copies the points - could be optimized? (4xf64 = 32 bytes per vertex)
-                let polygon_points: Vec< (Point3D, Colour) > = polygon.iter()
-                    .map(|&pi| (points[pi], cube.get_colours()[p]) )
-                    .collect();
-
-                screen.polygon(&polygon_points);
-            }
+            cube.render(&mut screen, &view_normal);
+            cube2.render(&mut screen, &view_normal);
         }).unwrap();
 
         // Copy the whole texture to the canvas...
@@ -152,7 +146,11 @@ fn main() {
         if x_angle >= 360.0 {
             x_angle = 0.0;
         }
-        
+
+        z_angle += 0.25;
+        if z_angle >= 360.0 {
+            z_angle = 0.0;
+        }
     }
 
 
