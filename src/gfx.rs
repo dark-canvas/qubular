@@ -137,10 +137,25 @@ impl<'a> Screen<'a> {
         }
     }
 
-    fn record_span(&mut self, x: usize, y: usize, z: f64, colour: &Colour) {
-        if y >= self.height {
+    fn record_span(&mut self, x: i32, y: i32, z: f64, colour: &Colour) {
+        let mut x = x;
+        let mut y = y;
+
+        // is this even possible?
+        if y < 0 {
             return;
         }
+        if y >= self.height as i32 {
+            return;
+        }
+        if x < 0 {
+            x = 0;
+        }
+        if x > (self.width as i32 - 1) {
+            x = (self.width as i32 - 1);
+        }
+        let x = x as usize;
+        let y = y as usize;
         match &mut self.spans[y] {
             Some(span) => {
                 if x < span.start.x {
@@ -240,6 +255,12 @@ impl<'a> Screen<'a> {
         if delta_y == 0 {
             // horizontal line
             if x1 < x2 {
+                if x1 < 0 {
+                    x1 = 0;
+                }
+                if x2 > (self.width as i32 - 1) {
+                    x2 = (self.width as i32 - 1);
+                }
                 self.spans[y1 as usize] = Some( Span {
                     start: SpanNode {
                         x: x1 as usize,
@@ -254,6 +275,12 @@ impl<'a> Screen<'a> {
                 });
                 return;
             } else {
+                if x2 < 0 {
+                    x2 = 0;
+                }
+                if x1 > (self.width as i32 - 1) {
+                    x1 = (self.width as i32 - 1);
+                }
                 self.spans[y1 as usize] = Some( Span {
                     start: SpanNode {
                         x: x2 as usize,
@@ -283,7 +310,7 @@ impl<'a> Screen<'a> {
 
                 // plot our first pixel
                 //self.putpixel(x1 as usize, y1 as usize);
-                self.record_span(x1 as usize, y1 as usize, z, c1);
+                self.record_span(x1, y1, z, c1);
                 delta_x -= 1;
 
                 // loop for the length of the major axis 
@@ -291,7 +318,7 @@ impl<'a> Screen<'a> {
                     if(error >= 0) { // if the error is greater than or equal to zero:
                         y1 += 1; // increase the minor axis (y)
                         error += diff_double_deltas;
-                        self.record_span(x1 as usize, y1 as usize, z, c1);
+                        self.record_span(x1, y1, z, c1);
                     } else {
                         error += double_delta_y;
                     }
@@ -311,7 +338,7 @@ impl<'a> Screen<'a> {
                 
                 // plot our first pixel
                 //self.putpixel( x1 as usize, y1 as usize); 
-                self.record_span(x1 as usize, y1 as usize, z, c1);
+                self.record_span(x1, y1, z, c1);
                 delta_y -= 1;
                 
                 // loop for the length of the major axis
@@ -324,7 +351,7 @@ impl<'a> Screen<'a> {
                     }
                     y1 += 1; // increase major axis to next pixel
                     //self.putpixel(x1 as usize, y1 as usize); // plot our pixel
-                    self.record_span(x1 as usize, y1 as usize, z, c1);
+                    self.record_span(x1, y1, z, c1);
                     delta_y -= 1;
                     z += zinc;
                 }

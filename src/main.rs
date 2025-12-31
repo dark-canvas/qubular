@@ -45,7 +45,7 @@ fn main() {
     // I think it's because Sz is -1... if I negate the forward vector in the camera matrix it seems to work properly, 
     // but I'm not sure if that's correct.
     let camera = camera::Camera::new(
-        Point3D::new(0.0, 0.0, 0.0),
+        Point3D::new(0.0, 2.0, -1.0),
         Point3D::new(0.0, 0.0, 15.0),
     );
 
