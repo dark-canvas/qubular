@@ -1,7 +1,8 @@
 use crate::zbuffer::ZBuffer;
 use crate::colour::Colour;
+use crate::point2d::Point2D;
 use crate::point3d::Point3D;
-
+use crate::vector::Vector;
 
 #[derive(Debug, Copy, Clone)]
 struct SpanNode {
@@ -364,29 +365,15 @@ impl<'a> Screen<'a> {
     pub fn polygon(&mut self, vertices: &Vec<(Point3D, Colour)>) {
         let mut prev_point = &vertices[0];
         for point in 1..vertices.len() {
-            /*
-            self.line(
-                prev_point.0.x as usize, 
-                prev_point.0.y as usize,
-                vertices[point].0.x as usize,
-                vertices[point].0.y as usize);
-            */
             self.line_to_spans(
                 &prev_point.0, 
                 &prev_point.1,
                 &vertices[point].0,
                 &vertices[point].1);
 
-                prev_point = &vertices[point];
+            prev_point = &vertices[point];
         }
         // close the polygon by drawing a line from last to first
-        /*
-        self.line(
-            prev_point.0.x as usize, 
-            prev_point.0.y as usize,
-            vertices[0].0.x as usize, 
-            vertices[0].0.y as usize);
-            */
         self.line_to_spans(
             &prev_point.0, 
             &prev_point.1,

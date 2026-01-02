@@ -1,19 +1,20 @@
 
 use crate::{Point2D, Point3D, Matrix, Vector, Colour};
 use crate::gfx::Screen;
+use std::fmt;
 
-// TODO: descibe on the proper coordinate system?
-// OpenGL supposedly uses a right handed system:
+// TODO: confirm this...
 //
-//      y axis
-//        ^
-//        |
-//        |
-//        /--------->   x axis
-//       /  
-//      /
-//     V 
-//  z axis
+//            -y 
+//             ^    ^ +z
+//             |   /
+//             |  /
+//             | /
+//  -x --------|--------->  +x
+//           / |  
+//          /  |
+//         V   |
+//      -z     v +y
 
 
 // A polygon is a list of points, where is point is represented as 
@@ -31,48 +32,62 @@ pub struct SimpleObject {
     polygons: Vec<Polygon>,
     normals: Vec<Vector>,
     colours: Vec<Colour>,
-    projected_normals: Vec<Point2D>,
+    projected_normals: Vec<(Point2D, Point2D)>,
+}
+
+impl fmt::Display for SimpleObject {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for p in 0..self.get_polygon_count() {
+            let polygon = self.get_polygon(p);
+            write!(f, "Polygon {}:\n", p)?;
+            for &vi in polygon {
+                let overtex = &self.vertices[vi];
+                let tvertex = &self.transformed[vi];
+                write!(f, "  Vertex {}: {} {}\n", vi, overtex, tvertex)?;
+            }
+            write!(f, "  Normal: {}\n", self.normals[p])?;
+        }
+        Ok(())
+    }
 }
 
 impl SimpleObject {
 
     pub fn cube(size: u32) -> Self {
         /*
-         *     4 _____________5
+         *     0 _____________1
          *      /.           /|
          *     / .          / |
          *    /__._________/  |
-         *  0|   .        |1  |
+         *  4|   .       5|   |
          *   |   ........ |...|
-         *   |  . 7       |  /6
+         *   |  . 3       |  /2
          *   | .          | /
          *   |____________|/
-         *   3            2
+         *   7            6
          */
 
 
         let d : f64 = size as f64 / 2.0;
-        let mut result = SimpleObject {
-            vertices: vec![
-                // front most (+z) sqaure, from top-left point and going clock-wise, followed by the same square in behind (-z)
+        let cube = vec![
                 Point3D::new(-d,  d,  d), Point3D::new(d,  d,  d), Point3D::new(d, -d,  d), Point3D::new(-d, -d,  d), 
                 Point3D::new(-d,  d, -d), Point3D::new(d,  d, -d), Point3D::new(d, -d, -d), Point3D::new(-d, -d, -d), 
-            ],
-            transformed: vec![
-                Point3D{ x:0.0, y:0.0, z:0.0, w:0.0 }; 8
-            ],
+            ];
+        let mut result = SimpleObject {
+            vertices: cube.clone(),
+            transformed: cube.clone(), // same as the original at start
             projected: vec![
                 Point3D{ x:0.0, y:0.0, z:0.0, w:0.0 }; 8
             ],
             // define polygons in counter-clockwise order in order for the normals to point outward
             // TODO: merge all polygon data into a single structure
             polygons: vec![
-                vec![ 3, 2, 1, 0 ], // front
-                vec![ 0, 4, 7, 3 ], // left
-                vec![ 4, 5, 6, 7 ], // back
-                vec![ 5, 1, 2, 6 ], // right
-                vec![ 1, 5, 4, 0 ], // top
-                vec![ 3, 7, 6, 2 ], // bottom
+                vec![ 0, 1, 2, 3 ], 
+                vec![ 0, 3, 7, 4 ], 
+                vec![ 7, 6, 5, 4 ], 
+                vec![ 1, 5, 6, 2 ], 
+                vec![ 0, 4, 5, 1 ], 
+                vec![ 2, 6, 7, 3 ], 
             ],
             normals: vec![
                 Vector::new(0.0, 0.0, 0.0); 6
@@ -86,7 +101,7 @@ impl SimpleObject {
                 Colour::new(255, 0, 255), // magenta
             ],
             projected_normals: vec![
-                Point2D{ x:0, y:0 }; 6
+                (Point2D{ x:0, y:0 }, Point2D{ x:0, y:0 }); 6
             ],
         };
         result.calculate_normals();
@@ -94,6 +109,7 @@ impl SimpleObject {
     }
 
     fn calculate_normals(&mut self) {
+        // TODO: do these need to be recalculated or can they be translated with the object?
         // calculate normals for each polygon
         for i in 0..self.get_polygon_count() {
             let polygon = &self.polygons[i];
@@ -101,15 +117,13 @@ impl SimpleObject {
             let p0 = &self.transformed[polygon[0]];
             let p1 = &self.transformed[polygon[1]];
             let p2 = &self.transformed[polygon[2]];
-            //let v1 = Vector::from_points(p0, p1);
-            //let v2 = Vector::from_points(p0, p2);
-            let v1 = Vector::from_points(p1, p0);
+            let v1 = Vector::from_points(p0, p1);
             let v2 = Vector::from_points(p1, p2);
+
             let normal = v1.cross_product(&v2).normalize();
             self.normals[i] = normal;
         }
     }
-
 
     pub fn get_polygon_count(&self) -> usize {
         self.polygons.len()
@@ -137,10 +151,6 @@ impl SimpleObject {
 
     pub fn get_normals(&self) -> &Vec<Vector> {
         &self.normals
-    }
-
-    pub fn get_projected_normals(&self) -> &Vec<Point2D> {
-        &self.projected_normals
     }
 
     pub fn get_colours(&self) -> &Vec<Colour> {
@@ -173,13 +183,51 @@ impl SimpleObject {
             self.projected[i] = projected;
         }
 
-        for i in 0..self.normals.len() {
-            let normal = &self.normals[i];
-            let mut projected_normal = Point2D{
-                x: ((normal.x * aspect_ratio * fov_rad) / normal.z * (win_width as f64 / 2.0) + (win_width as f64 / 2.0)) as u32,
-                y: ((normal.y * fov_rad) / normal.z * (win_height as f64 / 2.0) + (win_height as f64 / 2.0)) as u32,
+        // TODO embed the normal into the array of points so that it's rotated with everything else
+
+        // for each polygon, find the center point, and project the normal there, and calculate the 
+        // start and end of the normal line in screen space
+        for p in 0..self.get_polygon_count() {
+            let polygon = self.get_polygon(p);
+            let first_vertex = &self.transformed[polygon[0]];
+
+            let mut min_x = first_vertex.x as f64;
+            let mut max_x = first_vertex.x as f64;
+            let mut min_y = first_vertex.y as f64;
+            let mut max_y = first_vertex.y as f64;
+            let mut min_z = first_vertex.z as f64;
+            let mut max_z = first_vertex.z as f64;
+
+            for &vi in polygon.iter().skip(1) {
+                min_x = min_x.min(self.transformed[vi].x);
+                max_x = max_x.max(self.transformed[vi].x);
+                min_y = min_y.min(self.transformed[vi].y);
+                max_y = max_y.max(self.transformed[vi].y);
+                min_z = min_z.min(self.transformed[vi].z);
+                max_z = max_z.max(self.transformed[vi].z);
+            }
+            let center = Point3D{
+                x: (min_x + max_x) / 2.0,
+                y: (min_y + max_y) / 2.0,
+                z: (min_z + max_z) / 2.0,
+                w: 1.0,
             };
-            self.projected_normals[i] = projected_normal;
+            let normal_end = Point3D{
+                x: center.x + self.normals[p].x,
+                y: center.y + self.normals[p].y,
+                z: center.z + self.normals[p].z,
+                w: 1.0,
+            };
+
+            let mut projected_start = Point2D{
+                x: ((center.x * aspect_ratio * fov_rad) / center.z * (win_width as f64 / 2.0) + (win_width as f64 / 2.0)) as u32,
+                y: ((center.y * fov_rad) / center.z * (win_height as f64 / 2.0) + (win_height as f64 / 2.0)) as u32,
+            };
+            let mut projected_end = Point2D{
+                x: ((normal_end.x * aspect_ratio * fov_rad) / normal_end.z * (win_width as f64 / 2.0) + (win_width as f64 / 2.0)) as u32,
+                y: ((normal_end.y * fov_rad) / normal_end.z * (win_height as f64 / 2.0) + (win_height as f64 / 2.0)) as u32,
+            };
+            self.projected_normals[p] = (projected_start, projected_end);
         }
     }
 
@@ -202,7 +250,11 @@ impl SimpleObject {
                 .collect();
 
             screen.polygon(&polygon_points);
+            screen.line(self.projected_normals[p].0.x as usize, 
+                        self.projected_normals[p].0.y as usize, 
+                        self.projected_normals[p].1.x as usize, 
+                        self.projected_normals[p].1.y as usize,
+                        Colour::new(255, 255, 255));
         }
     }
-
 }

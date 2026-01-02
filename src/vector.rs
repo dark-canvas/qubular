@@ -23,12 +23,11 @@ impl Vector {
         }
     }
 
-    // TODO: should this be p1 - p2?  What is the convention?
-    pub fn from_points(p1: &Point3D, p2: &Point3D) -> Self {
+    pub fn from_points(start: &Point3D, end: &Point3D) -> Self {
         Vector{
-            x: p2.x - p1.x,
-            y: p2.y - p1.y,
-            z: p2.z - p1.z,
+            x: end.x - start.x,
+            y: end.y - start.y,
+            z: end.z - start.z,
         }
     }
 

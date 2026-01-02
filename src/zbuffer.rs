@@ -9,13 +9,13 @@ impl ZBuffer {
         ZBuffer {
             width,
             height,
-            buffer: vec![f64::INFINITY; width * height],
+            buffer: vec![f64::NEG_INFINITY; width * height],
         }
     }
 
     pub fn clear(&mut self) {
         for i in 0..self.buffer.len() {
-            self.buffer[i] = f64::INFINITY;
+            self.buffer[i] = f64::NEG_INFINITY;
         }
     }
 
@@ -27,7 +27,7 @@ impl ZBuffer {
         if x >= self.width || y >= self.height {
             return false;
         }
-        if depth >= self.buffer[y * self.width + x] {
+        if depth <= self.buffer[y * self.width + x] {
             return false;
         }
         self.buffer[y * self.width + x] = depth;

@@ -40,15 +40,12 @@ fn main() {
     let mut cube = SimpleObject::cube(5);
     let mut cube2 = SimpleObject::cube(5);
 
-    // TODO: the rendering of the polygons is messed up when the camera is in use, even when the camera 
-    // is at 0,0,0 (which should be equivalent to no camera transform at all)
-    // I think it's because Sz is -1... if I negate the forward vector in the camera matrix it seems to work properly, 
-    // but I'm not sure if that's correct.
-    let camera = camera::Camera::new(
-        Point3D::new(0.0, 2.0, -1.0),
-        Point3D::new(0.0, 0.0, 15.0),
+    let mut camera = camera::Camera::new(
+        Point3D::new(0.0, 0.0, -30.0), // camera's position in world space
+        Point3D::new(0.0, 0.0, 15.0),  // point the camera is looking at in world space
     );
 
+    println!("Cube:\n{}", cube);
     println!("Camera matrix:\n{}", camera.get_matrix());
     println!("View normal:\n{}", camera.get_view_normal());
 
@@ -122,11 +119,14 @@ fn main() {
 
             screen.clear();
 
+            let camera_rotation = Matrix::rotate_y(y_angle, &trig);
+            camera.apply(&camera_rotation);
+
             let rotate_y = Matrix::rotate_y(y_angle, &trig);
             let rotate_x = Matrix::rotate_x(x_angle, &trig);
-            // back-face culling isn't working properly with the x translation... using the wrong coords?
             let translate = Matrix::translate(2.0, 0.0, 16.0);
             let matrix = rotate_y * rotate_x * translate * camera.get_matrix();
+            //let matrix = translate * camera.get_matrix();
             cube.apply(&matrix);
 
             // rotate y was consumed above... recreated (TODO: borrow above)
@@ -134,9 +134,18 @@ fn main() {
             let rotate_z = Matrix::rotate_z(z_angle, &trig);
             let translate2 = Matrix::translate(-2.0, 0.0, 16.0);
             let matrix2 = rotate_y * rotate_z * translate2 * camera.get_matrix();
+            //let matrix2 = translate2 * camera.get_matrix();
             cube2.apply(&matrix2);
 
-            let view_normal = camera.get_view_normal();
+            //let view_normal = camera.get_view_normal();
+            // Doesn't matter what the camera view normal is, the view normal is always 0,0,-1 
+            // from the camera's point of view because everything is transformed by the camera matrix
+            // to be relative to the camera.
+            let view_normal = Vector {
+                x: 0.0,
+                y: 0.0,
+                z: -1.0,
+            };
 
             cube.project(WIN_WIDTH, WIN_HEIGHT, FOV);
             cube2.project(WIN_WIDTH, WIN_HEIGHT, FOV);
