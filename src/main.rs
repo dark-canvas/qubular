@@ -4,6 +4,7 @@ extern crate trigr;
 mod camera;
 mod colour;
 mod gfx;
+mod light_source;
 mod matrix;
 mod point2d;
 mod point3d;
@@ -13,6 +14,7 @@ mod zbuffer;
 
 use colour::Colour;
 use gfx::Screen;
+use light_source::LightSource;
 use matrix::Matrix;
 use point2d::Point2D;
 use point3d::Point3D;
@@ -43,6 +45,10 @@ fn main() {
     let mut camera = camera::Camera::new(
         Point3D::new(0.0, 0.0, -30.0), // camera's position in world space
         Point3D::new(0.0, 0.0, 15.0),  // point the camera is looking at in world space
+    );
+
+    let light = light_source::LightSource::new(
+        &Point3D::new(0.0, 10.0, 10.0)
     );
 
     println!("Cube:\n{}", cube);
@@ -96,6 +102,11 @@ fn main() {
                     ..
                 } => {
                     paused = !paused;
+                    if paused {
+                        println!("Cube:\n{}", cube);
+                        println!("Cube2:\n{}", cube2);
+
+                    }
                 }
                 e => {
                     println!("{:?}", e);
@@ -136,6 +147,9 @@ fn main() {
             let matrix2 = rotate_y * rotate_z * translate2 * camera.get_matrix();
             //let matrix2 = translate2 * camera.get_matrix();
             cube2.apply(&matrix2);
+
+            cube.light(&light);
+            cube2.light(&light);
 
             //let view_normal = camera.get_view_normal();
             // Doesn't matter what the camera view normal is, the view normal is always 0,0,-1 

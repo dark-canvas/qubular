@@ -196,18 +196,32 @@ impl<'a> Screen<'a> {
         for y in 0..self.height {
             match &self.spans[y] {
                 Some(span) => {
-                    let span_width = span.end.x - span.start.x;
-                    let zinc = (span.end.z - span.start.z) / (span_width as f64);
+                    let span_width = (span.end.x - span.start.x) as f64;
+                    let zinc = (span.end.z - span.start.z) / span_width;
+                    let c1 = &span.start.c;
+                    let c2 = &span.end.c;
+                    let rinc = (c2.r as f64 - c1.r as f64) / span_width;
+                    let ginc = (c2.g as f64 - c1.g as f64) / span_width;
+                    let binc = (c2.b as f64 - c1.b as f64) / span_width;
+                    let mut r = c1.r as f64;
+                    let mut g = c1.g as f64;
+                    let mut b = c1.b as f64;
                     let mut z = span.start.z;
-                    let c = span.start.c;
+                    let mut c = span.start.c;
                     // need to interpolate z and colour across the span
                     for x in span.start.x..=span.end.x {
                         // TODO: fetch pointer into zbuf and iterate that rather than 
                         // recalc y*width+x each time
                         if self.zbuf.set_depth(x, y, z) {
+                            c.r = r as u8;
+                            c.g = g as u8;
+                            c.b = b as u8;
                             self.putpixel(x, y, c);
                         }
                         z += zinc;
+                        r += rinc;
+                        g += ginc;
+                        b += binc;
                     }
                     self.spans[y] = None;
                 }
@@ -233,16 +247,6 @@ impl<'a> Screen<'a> {
         let mut x2: i32 = p2.x as i32;
         let mut y2: i32 = p2.y as i32;
 
-        /*
-        if(y1 > y2) {
-            y1 ^= y2; // swap y1 and y2
-            y2 ^= y1;
-            y1 ^= y2;
-            x1 ^= x2; // swap x1 and x2
-            x2 ^= x1;
-            x1 ^= x2;
-        }
-        */
         let mut delta_x = x2 - x1;  // will determine L->R or R->L
         let mut delta_y = y2 - y1;  // has to be positive because line goes T->B
         let direction = match (delta_x > 0) {
@@ -253,6 +257,7 @@ impl<'a> Screen<'a> {
             }
         };
 
+        // TODO: merge this into separate record_hspan() function?
         if delta_y == 0 {
             // horizontal line
             if x1 < x2 {
@@ -307,7 +312,14 @@ impl<'a> Screen<'a> {
                 let diff_double_deltas = double_delta_y - (delta_x + delta_x);
                 let mut error = double_delta_y - delta_x;
                 let zinc = (p2.z - p1.z) / (delta_x as f64);
+                let rinc = (c2.r as f64 - c1.r as f64) / (delta_x as f64);
+                let ginc = (c2.g as f64 - c1.g as f64) / (delta_x as f64);
+                let binc = (c2.b as f64 - c1.b as f64) / (delta_x as f64);
+                let mut r = c1.r as f64;
+                let mut g = c1.g as f64;
+                let mut b = c1.b as f64;
                 let mut z = p1.z;
+                let mut c = *c1;
 
                 // plot our first pixel
                 //self.putpixel(x1 as usize, y1 as usize);
@@ -319,7 +331,7 @@ impl<'a> Screen<'a> {
                     if(error >= 0) { // if the error is greater than or equal to zero:
                         y1 += 1; // increase the minor axis (y)
                         error += diff_double_deltas;
-                        self.record_span(x1, y1, z, c1);
+                        self.record_span(x1, y1, z, &c);
                     } else {
                         error += double_delta_y;
                     }
@@ -328,6 +340,12 @@ impl<'a> Screen<'a> {
                     
                     delta_x -= 1;
                     z += zinc;
+                    r += rinc;
+                    g += ginc;
+                    b += binc;
+                    c.r = r as u8;
+                    c.g = g as u8;
+                    c.b = b as u8;
                 }
             }
             false => { // major axis is the y
@@ -335,7 +353,14 @@ impl<'a> Screen<'a> {
                 let diff_double_deltas = double_delta_x - (delta_y + delta_y);
                 let mut error = double_delta_x - delta_y;
                 let zinc = (p2.z - p1.z) / (delta_y as f64);
+                let rinc = (c2.r as f64 - c1.r as f64) / (delta_y as f64);
+                let ginc = (c2.g as f64 - c1.g as f64) / (delta_y as f64);
+                let binc = (c2.b as f64 - c1.b as f64) / (delta_y as f64);
+                let mut r = c1.r as f64;
+                let mut g = c1.g as f64;
+                let mut b = c1.b as f64;
                 let mut z = p1.z;
+                let mut c = *c1;
                 
                 // plot our first pixel
                 //self.putpixel( x1 as usize, y1 as usize); 
@@ -352,9 +377,15 @@ impl<'a> Screen<'a> {
                     }
                     y1 += 1; // increase major axis to next pixel
                     //self.putpixel(x1 as usize, y1 as usize); // plot our pixel
-                    self.record_span(x1, y1, z, c1);
+                    self.record_span(x1, y1, z, &c);
                     delta_y -= 1;
                     z += zinc;
+                    r += rinc;
+                    g += ginc;
+                    b += binc;
+                    c.r = r as u8;
+                    c.g = g as u8;
+                    c.b = b as u8;
                 }
             }
         }

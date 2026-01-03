@@ -1,5 +1,5 @@
 
-use crate::{Point2D, Point3D, Matrix, Vector, Colour};
+use crate::{Point2D, Point3D, Matrix, Vector, Colour, LightSource};
 use crate::gfx::Screen;
 use std::fmt;
 
@@ -23,6 +23,7 @@ use std::fmt;
 // but it's used as an index into a Vec, which uses usize, so this saves a bunch of 
 // "as usize" conversions.
 pub type Polygon = Vec<usize>;
+pub type VertexColours = Vec<Colour>;
 
 pub struct SimpleObject {
     // TODO: will need some way to expose this in order to allow it to be transformed
@@ -32,6 +33,7 @@ pub struct SimpleObject {
     polygons: Vec<Polygon>,
     normals: Vec<Vector>,
     colours: Vec<Colour>,
+    lit_colours: Vec<VertexColours>,
     projected_normals: Vec<(Point2D, Point2D)>,
 }
 
@@ -40,10 +42,12 @@ impl fmt::Display for SimpleObject {
         for p in 0..self.get_polygon_count() {
             let polygon = self.get_polygon(p);
             write!(f, "Polygon {}:\n", p)?;
-            for &vi in polygon {
+            for v in 0..polygon.len() {
+                let vi = polygon[v];
                 let overtex = &self.vertices[vi];
                 let tvertex = &self.transformed[vi];
-                write!(f, "  Vertex {}: {} {}\n", vi, overtex, tvertex)?;
+                let lit_colour = &self.lit_colours[p][v];
+                write!(f, "  Vertex {}: {} {} {}\n", vi, overtex, tvertex, lit_colour)?;
             }
             write!(f, "  Normal: {}\n", self.normals[p])?;
         }
@@ -99,6 +103,14 @@ impl SimpleObject {
                 Colour::new(255, 255, 0), // yellow
                 Colour::new(0, 255, 255), // cyan
                 Colour::new(255, 0, 255), // magenta
+            ],
+            lit_colours: vec![ 
+                vec![Colour::new(255,255,255); 4],
+                vec![Colour::new(255,255,255); 4],
+                vec![Colour::new(255,255,255); 4],
+                vec![Colour::new(255,255,255); 4],
+                vec![Colour::new(255,255,255); 4],
+                vec![Colour::new(255,255,255); 4],
             ],
             projected_normals: vec![
                 (Point2D{ x:0, y:0 }, Point2D{ x:0, y:0 }); 6
@@ -162,6 +174,45 @@ impl SimpleObject {
             self.transformed[i] = self.vertices[i] * mat;
         }
         self.calculate_normals();
+    }
+
+    pub fn light(&mut self, light: &LightSource) {
+        for p in 0..self.polygons.len() {
+            let polygon = &self.polygons[p];
+            let n = &self.normals[p];
+
+            for v in 0..polygon.len() {
+                let point = &self.vertices[ polygon[v] ];
+
+                // calculate the normal from the light source to the vertex
+                let l = Vector::from_points(point, light.get_position()).normalize();
+
+                // The dot product of the light vector (l) and the polygon normal (n) produces 
+                // a value in the range of -1 to 1, with the following properties:
+                //      == 1 is a parallel vector
+                //       > 0 is an acute (<90) degress
+                //      == 0 is a right angle == 90 degresst aw
+                //       < 0 is an obtuse (>90 degree) angle
+                // This is ideal; we only care about positive values, as they showcase the 
+                // situations where the polygon is oriented towards the light, reflecting the 
+                // most light when the polygon normal and light normal are parallel (dot product is 
+                // 1.0) and reflection decreases as the normals tilt away from each other.
+                // We can then simply "scale" the polygon's colour by this value of the dot product 
+                // to have the polygon's colour/intensity affected by the light.
+                let mut d = n.dot_product(&l);
+                if d < 0.0 {
+                    d = 0.0;
+                }
+
+                let poly_colour = &self.colours[p];
+                self.lit_colours[p][v] = Colour {
+                    r: (poly_colour.r as f64 * d) as u8,
+                    g: (poly_colour.g as f64 * d) as u8,
+                    b: (poly_colour.b as f64 * d) as u8,
+                };
+                
+            }
+        }
     }
 
     // NOTE: this is the what co-pilot produced as a projection function.  It's more complex than 
@@ -243,10 +294,12 @@ impl SimpleObject {
                 continue;
             }
 
-            // pull together the relevant parts to draw the polygon
-            // NOTE: this copies the points - could be optimized? (4xf64 = 32 bytes per vertex)
-            let polygon_points: Vec< (Point3D, Colour) > = polygon.iter()
-                .map(|&pi| (points[pi], self.get_colours()[p]) )
+            
+             // pull together the relevant parts to draw the polygon
+             // NOTE: this copies the points - could be optimized? (4xf64 = 32 bytes per vertex)
+            let colours = &self.lit_colours[p];
+            let polygon_points: Vec<(Point3D, Colour)> = (0..polygon.len())
+                .map(|pi| ( points[ polygon[pi]], colours[pi] ) )
                 .collect();
 
             screen.polygon(&polygon_points);
