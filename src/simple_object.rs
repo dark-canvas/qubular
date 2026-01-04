@@ -1,6 +1,5 @@
 
 use crate::{Point2D, Point3D, Matrix, Vector, Colour, LightSource};
-use crate::gfx::Screen;
 use std::fmt;
 
 // TODO: confirm this...
@@ -225,7 +224,7 @@ impl SimpleObject {
 
         for i in 0..self.transformed.len() {
             let point = &self.transformed[i];
-            let mut projected = Point3D{
+            let projected = Point3D{
                 x: ((point.x * aspect_ratio * fov_rad) / point.z * (win_width as f64 / 2.0) + (win_width as f64 / 2.0)),
                 y: ((point.y * fov_rad) / point.z * (win_height as f64 / 2.0) + (win_height as f64 / 2.0)),
                 z: point.z,
@@ -270,11 +269,11 @@ impl SimpleObject {
                 w: 1.0,
             };
 
-            let mut projected_start = Point2D{
+            let projected_start = Point2D{
                 x: ((center.x * aspect_ratio * fov_rad) / center.z * (win_width as f64 / 2.0) + (win_width as f64 / 2.0)) as u32,
                 y: ((center.y * fov_rad) / center.z * (win_height as f64 / 2.0) + (win_height as f64 / 2.0)) as u32,
             };
-            let mut projected_end = Point2D{
+            let projected_end = Point2D{
                 x: ((normal_end.x * aspect_ratio * fov_rad) / normal_end.z * (win_width as f64 / 2.0) + (win_width as f64 / 2.0)) as u32,
                 y: ((normal_end.y * fov_rad) / normal_end.z * (win_height as f64 / 2.0) + (win_height as f64 / 2.0)) as u32,
             };

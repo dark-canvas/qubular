@@ -1,8 +1,6 @@
 use crate::zbuffer::ZBuffer;
 use crate::colour::Colour;
-use crate::point2d::Point2D;
 use crate::point3d::Point3D;
-use crate::vector::Vector;
 
 #[derive(Debug, Copy, Clone)]
 struct SpanNode {
@@ -72,7 +70,7 @@ impl<'a> Screen<'a> {
         let mut x2: i32 = x2 as i32;
         let mut y2: i32 = y2 as i32;
 
-        if(y1 > y2) {
+        if y1 > y2 {
             y1 ^= y2; // swap y1 and y2
             y2 ^= y1;
             y1 ^= y2;
@@ -82,7 +80,7 @@ impl<'a> Screen<'a> {
         }
         let mut delta_x = x2 - x1;  // will determine L->R or R->L
         let mut delta_y = y2 - y1;  // has to be positive because line goes T->B
-        let direction = match (delta_x > 0) { 
+        let direction = match delta_x > 0 { 
             true => 1i32,           // delta_x is positive: we're going left to right
             false => {              // delta_x is negative: we're going from right to left
                 delta_x = -delta_x; // we need the absolute length of this axis later on
@@ -102,7 +100,7 @@ impl<'a> Screen<'a> {
 
                 // loop for the length of the major axis 
                 while delta_x > 0 {
-                    if(error >= 0) { // if the error is greater than or equal to zero:
+                    if error >= 0 { // if the error is greater than or equal to zero:
                         y1 += 1; // increase the minor axis (y)
                         error += diff_double_deltas;
                     } else {
@@ -124,7 +122,7 @@ impl<'a> Screen<'a> {
                 
                 // loop for the length of the major axis
                 while delta_y > 0 {
-                    if(error >= 0) { // if the error is greater than or equal to zero:
+                    if error >= 0 { // if the error is greater than or equal to zero:
                         x1 += direction; // increase the minor axis (x)
                         error += diff_double_deltas;
                     } else  {
@@ -140,7 +138,7 @@ impl<'a> Screen<'a> {
 
     fn record_span(&mut self, x: i32, y: i32, z: f64, colour: &Colour) {
         let mut x = x;
-        let mut y = y;
+        //let mut y = y;
 
         // is this even possible?
         if y < 0 {
@@ -152,8 +150,8 @@ impl<'a> Screen<'a> {
         if x < 0 {
             x = 0;
         }
-        if x > (self.width as i32 - 1) {
-            x = (self.width as i32 - 1);
+        if x > self.width as i32 - 1 {
+            x = self.width as i32 - 1;
         }
         let x = x as usize;
         let y = y as usize;
@@ -243,13 +241,13 @@ impl<'a> Screen<'a> {
 
         // locally convert to signed (and mutable) so that we can add the (also signed) direction to them
         let mut x1: i32 = p1.x as i32;
-        let mut y1: i32 = p1.y as i32;
         let mut x2: i32 = p2.x as i32;
-        let mut y2: i32 = p2.y as i32;
+        let mut y1: i32 = p1.y as i32;
+        let y2: i32 = p2.y as i32;
 
         let mut delta_x = x2 - x1;  // will determine L->R or R->L
         let mut delta_y = y2 - y1;  // has to be positive because line goes T->B
-        let direction = match (delta_x > 0) {
+        let direction = match delta_x > 0 {
             true => 1i32,           // delta_x is positive: we're going left to right
             false => {              // delta_x is negative: we're going from right to left
                 delta_x = -delta_x; // we need the absolute length of this axis later on
@@ -264,8 +262,8 @@ impl<'a> Screen<'a> {
                 if x1 < 0 {
                     x1 = 0;
                 }
-                if x2 > (self.width as i32 - 1) {
-                    x2 = (self.width as i32 - 1);
+                if x2 > self.width as i32 - 1 {
+                    x2 = self.width as i32 - 1;
                 }
                 self.spans[y1 as usize] = Some( Span {
                     start: SpanNode {
@@ -284,8 +282,8 @@ impl<'a> Screen<'a> {
                 if x2 < 0 {
                     x2 = 0;
                 }
-                if x1 > (self.width as i32 - 1) {
-                    x1 = (self.width as i32 - 1);
+                if x1 > self.width as i32 - 1 {
+                    x1 = self.width as i32 - 1;
                 }
                 self.spans[y1 as usize] = Some( Span {
                     start: SpanNode {
@@ -328,7 +326,7 @@ impl<'a> Screen<'a> {
 
                 // loop for the length of the major axis 
                 while delta_x > 0 {
-                    if(error >= 0) { // if the error is greater than or equal to zero:
+                    if error >= 0 { // if the error is greater than or equal to zero:
                         y1 += 1; // increase the minor axis (y)
                         error += diff_double_deltas;
                         self.record_span(x1, y1, z, &c);
@@ -369,7 +367,7 @@ impl<'a> Screen<'a> {
                 
                 // loop for the length of the major axis
                 while delta_y > 0 {
-                    if(error >= 0) { // if the error is greater than or equal to zero:
+                    if error >= 0 { // if the error is greater than or equal to zero:
                         x1 += direction; // increase the minor axis (x)
                         error += diff_double_deltas;
                     } else  {

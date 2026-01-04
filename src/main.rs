@@ -1,3 +1,6 @@
+// There's a lot of library code here which may not be called in this example...
+#![allow(dead_code)]
+
 extern crate sdl2;
 extern crate trigr;
 
@@ -21,15 +24,12 @@ use point3d::Point3D;
 use simple_object::SimpleObject;
 use trigr::SineCosineTable;
 use vector::Vector;
-use zbuffer::ZBuffer;
 
-use std::ops;
-use std::fmt;
-use std::thread;
-use std::time::Duration;
+//use std::thread;
+//use std::time::Duration;
 
 use sdl2::event::Event;
-use sdl2::keyboard::{Keycode, Scancode};
+use sdl2::keyboard::Keycode;
 use sdl2::pixels::PixelFormatEnum;
 
 use std::time::SystemTime;
@@ -81,10 +81,6 @@ fn main() {
     let mut frames: u64 = 0;
     let start_time = SystemTime::now();
 
-    let tan_half_fov = trig.tangent( (FOV/2) as f64 );
-    let dx = (WIN_WIDTH/2) as f64 / tan_half_fov;
-    let dy = (WIN_HEIGHT/2) as f64 / tan_half_fov;
-
     let mut y_angle = 0.0;
     let mut x_angle = 0.0;
     let mut z_angle = 0.0;
@@ -115,7 +111,7 @@ fn main() {
             }
         }
         
-        thread::sleep(Duration::from_millis(10));
+        //thread::sleep(Duration::from_millis(10));
         if paused {
             continue;
         }
@@ -197,12 +193,19 @@ fn main() {
         }
     }
 
+    let end_time = SystemTime::now();
+    let time_delta = end_time
+        .duration_since(start_time)
+        .expect("Time went backwards");
+    let frames_per_second = frames / time_delta.as_secs();
+    println!("Frames {} in {} seconcds -> {} fps", frames, time_delta.as_secs(), frames_per_second);
+
 
     // TODO: 
-    //   add frame rate calculation and display
-    //   display surface (and vertice) normals
+    //   add frame rate display
+    //   calc and display vertex normals
     //   rotate normals with points? (rather than recalculating each frame)
-    //   add camera-based view system
-    //   add shading/texture mapping
-    //   add z-buffer
+    //   add texture mapping
+    //   add more shading? (phong?)
+    //   add optional signed z-buffer?
 }
