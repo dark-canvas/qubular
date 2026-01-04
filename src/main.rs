@@ -41,6 +41,7 @@ static FOV: usize = 60;
 fn main() {
     let mut cube = SimpleObject::cube(5);
     let mut cube2 = SimpleObject::cube(5);
+    let mut cube3 = SimpleObject::cube(6);
 
     let mut camera = camera::Camera::new(
         Point3D::new(0.0, 0.0, -30.0), // camera's position in world space
@@ -148,8 +149,13 @@ fn main() {
             //let matrix2 = translate2 * camera.get_matrix();
             cube2.apply(&matrix2);
 
+            let translate3 = Matrix::translate(0.0, 0.0, 8.0);
+            let matrix3 = translate3 * camera.get_matrix();
+            cube3.apply(&matrix3);
+
             cube.light(&light);
             cube2.light(&light);
+            cube3.light(&light);
 
             //let view_normal = camera.get_view_normal();
             // Doesn't matter what the camera view normal is, the view normal is always 0,0,-1 
@@ -163,9 +169,11 @@ fn main() {
 
             cube.project(WIN_WIDTH, WIN_HEIGHT, FOV);
             cube2.project(WIN_WIDTH, WIN_HEIGHT, FOV);
+            cube3.project(WIN_WIDTH, WIN_HEIGHT, FOV);
 
             cube.render(&mut screen, &view_normal);
             cube2.render(&mut screen, &view_normal);
+            cube3.render(&mut screen, &view_normal);
         }).unwrap();
 
         // Copy the whole texture to the canvas...
